@@ -45,7 +45,7 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
 
     public List<Friend> connect(URL url)
     {
-
+        List<Friend> friends = new ArrayList<Friend>();
         HttpClient httpclient = new DefaultHttpClient();
 
         // Prepare a request object
@@ -92,7 +92,7 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
 
                 // Make some friends and return them
                 Iterator<JSONObject> iterator = friendsToHydrate.keys();
-                List<Friend> friends = new ArrayList<Friend>();
+
                 while (iterator.hasNext()) {
                     JSONObject friendJSON = (JSONObject) iterator.next();
                     JSONObject nameJSON = (JSONObject) friendJSON.get("Name");
@@ -106,14 +106,13 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
                     Log.d("Friend: Firstname", nameJSON.get("Firstname").toString());
                     friends.add(friend);
                 }
-                return friends;
             }
 
         } catch (Exception e) {
             Log.d("Longitude", "Exception: " + e.toString());
         }
 
-        return NO_FRIENDS;
+        return friends;
     }
 
     private static String convertStreamToString(InputStream is) {
