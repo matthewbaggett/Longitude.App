@@ -3,6 +3,11 @@ package io.thru.longitude;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -29,11 +34,15 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
     protected Long doInBackground(URL... urls){
         int count = urls.length;
         long parsedUrls = 0;
+        GoogleMap mMap = LongitudeMapsActivity.getGoogleMapObject();
         for (int i = 0; i < count; i++) {
 
             List<Friend> friends = connect(urls[i]);
             for(Friend friend : friends){
-                Log.i("Friends", "Found " + friend.getFirstName() + " " + friend.getLastName());
+                Log.i("Friends", "Found " + friend.getFullName() + " at " + friend.getLocation().toString());
+                LatLng friendLatLng = new LatLng(friend.getLocation().getX(), friend.getLocation().getY());
+                mMap.addMarker(new MarkerOptions().position(friendLatLng).title(friend.getFullName()));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(friendLatLng));
             }
             parsedUrls++;
 

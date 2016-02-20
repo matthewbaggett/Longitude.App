@@ -6,6 +6,10 @@ public class Friend {
     private String lastName;
     private Location location;
 
+    public String getFullName(){
+        return this.getFirstName() + " " + this.getLastName();
+    }
+
     public String getFirstName() {
         return firstName;
     }
