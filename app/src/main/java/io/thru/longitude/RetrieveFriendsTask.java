@@ -34,15 +34,15 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
     protected Long doInBackground(URL... urls){
         int count = urls.length;
         long parsedUrls = 0;
-        GoogleMap mMap = LongitudeMapsActivity.getGoogleMapObject();
+        //GoogleMap mMap = LongitudeMapsActivity.getGoogleMapObject();
         for (int i = 0; i < count; i++) {
 
             List<Friend> friends = connect(urls[i]);
             for(Friend friend : friends){
-                Log.i("Friends", "Found " + friend.getFullName() + " at " + friend.getLocation().toString());
+                Log.i("Friends", "Found " + friend.getFullName() + " at (" + friend.getLocation().toString() + ")");
                 LatLng friendLatLng = new LatLng(friend.getLocation().getX(), friend.getLocation().getY());
-                mMap.addMarker(new MarkerOptions().position(friendLatLng).title(friend.getFullName()));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(friendLatLng));
+                //mMap.addMarker(new MarkerOptions().position(friendLatLng).title(friend.getFullName()));
+                //mMap.moveCamera(CameraUpdateFactory.newLatLng(friendLatLng));
             }
             parsedUrls++;
 
@@ -96,14 +96,12 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
 
                 // Parse JSON
                 JSONObject friendsResponse = new JSONObject(result);
-                JSONArray friendsToHydrate = friendsResponse.getJSONObject("Friends");
+                JSONArray friendsToHydrate = friendsResponse.getJSONArray("Friends");
                 Log.d("LongitudeApiResponse", friendsToHydrate.toString());
 
                 // Make some friends and return them
-                Iterator<JSONObject> iterator = friendsToHydrate.keys();
-
-                while (iterator.hasNext()) {
-                    JSONObject friendJSON = (JSONObject) iterator.next();
+                for(int i = 0; i < friendsToHydrate.length(); i++){
+                    JSONObject friendJSON = friendsToHydrate.getJSONObject(i);
                     JSONObject nameJSON = (JSONObject) friendJSON.get("Name");
                     JSONObject locationJSON = (JSONObject) friendJSON.get("Location");
                     Friend friend = new Friend();
@@ -112,7 +110,6 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
                     friend.setLastName(nameJSON.getString("Lastname"));
                     location.setLocation(locationJSON.getDouble("Lat"), locationJSON.getDouble("Long"));
                     friend.setLocation(location);
-                    Log.d("Friend: Firstname", nameJSON.get("Firstname").toString());
                     friends.add(friend);
                 }
             }
