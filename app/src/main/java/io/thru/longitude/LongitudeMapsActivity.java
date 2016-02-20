@@ -72,7 +72,7 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
         try {
             URL url = new URL(baseUrl + "/friends");
-            Friend[] friends = RetrieveFriendsTask.execute(url);
+            new RetrieveFriendsTask().execute(url);
         }catch(MalformedURLException mue){
             Log.e("Longitude", "Malformed url", mue);
         }

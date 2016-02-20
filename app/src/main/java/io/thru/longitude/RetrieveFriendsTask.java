@@ -7,28 +7,43 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 
 public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
+
     private static final Friend[] NO_FRIENDS = {};
 
-    protected Friend[] doInBackground(URL... urls){
+    protected Long doInBackground(URL... urls){
         int count = urls.length;
+        long parsedUrls = 0;
         for (int i = 0; i < count; i++) {
-            return connect(urls[i]);
+
+            List<Friend> friends = connect(urls[i]);
+            for(Friend friend : friends){
+                Log.i("Friends", "Found " + friend.getFirstName() + " " + friend.getLastName());
+            }
+            parsedUrls++;
+
             // Escape early if cancel() is called
             if (isCancelled()) break;
         }
-        return NO_FRIENDS;
+        return parsedUrls;
     }
 
-    public Friend[] connect(URL url)
+    public List<Friend> connect(URL url)
     {
 
         HttpClient httpclient = new DefaultHttpClient();
@@ -38,12 +53,23 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
 
         HttpPost httpPost = new HttpPost(url.toString());
 
+        // Build the request object
+        JSONObject friendsRequest = new JSONObject();
+        try{
+            friendsRequest.put("sessionKey", "sHXpjQOGzLbL71m");
+        } catch (Exception ex) {
+
+        }
+
         // Execute the request
         HttpResponse response;
         try {
+            String message = friendsRequest.toString();
+            httpPost.setEntity(new StringEntity(message, "UTF8"));
+            httpPost.setHeader("Content-type", "application/json");
             response = httpclient.execute(httpPost);
             // Examine the response status
-            Log.i("Longitude",response.getStatusLine().toString());
+            Log.i("LongitudeApiStatus",response.getStatusLine().toString());
 
             // Get hold of the response entity
             HttpEntity entity = response.getEntity();
@@ -55,14 +81,33 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
                 // A Simple JSON Response Read
                 InputStream instream = entity.getContent();
                 String result = convertStreamToString(instream);
-                Log.d("Longitude", result);
-                // now you have the string representation of the HTML request
+                Log.d("LongitudeApiResponse", result);
+                // now you have the string representation of the JSON request
                 instream.close();
 
-                //TODO: Make some friends and return then
+                // Parse JSON
+                JSONObject friendsResponse = new JSONObject(result);
+                JSONArray friendsToHydrate = friendsResponse.getJSONObject("Friends");
+                Log.d("LongitudeApiResponse", friendsToHydrate.toString());
 
+                // Make some friends and return them
+                Iterator<JSONObject> iterator = friendsToHydrate.keys();
+                List<Friend> friends = new ArrayList<Friend>();
+                while (iterator.hasNext()) {
+                    JSONObject friendJSON = (JSONObject) iterator.next();
+                    JSONObject nameJSON = (JSONObject) friendJSON.get("Name");
+                    JSONObject locationJSON = (JSONObject) friendJSON.get("Location");
+                    Friend friend = new Friend();
+                    Location location = new Location();
+                    friend.setFirstName(nameJSON.getString("Firstname"));
+                    friend.setLastName(nameJSON.getString("Lastname"));
+                    location.setLocation(locationJSON.getDouble("Lat"), locationJSON.getDouble("Long"));
+                    friend.setLocation(location);
+                    Log.d("Friend: Firstname", nameJSON.get("Firstname").toString());
+                    friends.add(friend);
+                }
+                return friends;
             }
-
 
         } catch (Exception e) {
             Log.d("Longitude", "Exception: " + e.toString());
