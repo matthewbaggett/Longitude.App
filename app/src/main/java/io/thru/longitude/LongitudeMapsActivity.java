@@ -79,7 +79,7 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
     }
 
-    public static GoogleMap getGoogleMapObject(){
+    public GoogleMap getGoogleMapObject(){
         return mMap;
     }
 }
