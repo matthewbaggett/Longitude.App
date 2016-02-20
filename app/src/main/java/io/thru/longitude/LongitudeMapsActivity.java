@@ -13,6 +13,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -68,6 +70,12 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
     public void getFriendLocations() {
 
-        Friend[] friends = RetrieveFriendsTask.execute(baseUrl + "/friends");
+        try {
+            URL url = new URL(baseUrl + "/friends");
+            Friend[] friends = RetrieveFriendsTask.execute(url);
+        }catch(MalformedURLException mue){
+            Log.e("Longitude", "Malformed url", mue);
+        }
+
     }
 }
