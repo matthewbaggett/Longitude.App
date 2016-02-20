@@ -29,27 +29,37 @@ import java.util.List;
 
 public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
 
-    private static final Friend[] NO_FRIENDS = {};
+    private List<Friend> FoundFriends = new ArrayList<Friend>();
+
+    LongitudeMapsActivity caller;
+
+    RetrieveFriendsTask(LongitudeMapsActivity caller) {
+        this.caller = caller;
+    }
 
     protected Long doInBackground(URL... urls){
         int count = urls.length;
-        long parsedUrls = 0;
-        //GoogleMap mMap = LongitudeMapsActivity.getGoogleMapObject();
+        long parsedUrlsCount = 0;
         for (int i = 0; i < count; i++) {
 
             List<Friend> friends = connect(urls[i]);
-            for(Friend friend : friends){
-                Log.i("Friends", "Found " + friend.getFullName() + " at (" + friend.getLocation().toString() + ")");
-                LatLng friendLatLng = new LatLng(friend.getLocation().getX(), friend.getLocation().getY());
-                //mMap.addMarker(new MarkerOptions().position(friendLatLng).title(friend.getFullName()));
-                //mMap.moveCamera(CameraUpdateFactory.newLatLng(friendLatLng));
-            }
-            parsedUrls++;
+            this.FoundFriends = connect(urls[i]);
+
+            parsedUrlsCount++;
 
             // Escape early if cancel() is called
             if (isCancelled()) break;
         }
-        return parsedUrls;
+        return parsedUrlsCount;
+    }
+
+    protected void onPostExecute(Long parsedUrlsCount){
+        for(Friend friend : this.FoundFriends){
+            Log.i("Friends", "Found " + friend.getFullName() + " at (" + friend.getLocation().toString() + ")");
+            LatLng friendLatLng = new LatLng(friend.getLocation().getX(), friend.getLocation().getY());
+            caller.MapAddGoogleMapMarker(new MarkerOptions().position(friendLatLng).title(friend.getFullName()));
+        }
+        caller.MapZoomToFit();
     }
 
     public List<Friend> connect(URL url)

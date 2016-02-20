@@ -3,11 +3,14 @@ package io.thru.longitude;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,6 +18,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -28,6 +33,7 @@ import android.util.Log;
 public class LongitudeMapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+    private List<MarkerOptions> mMapMarkers = new ArrayList<MarkerOptions>();
 
     String text;
 
@@ -58,21 +64,14 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-
         getFriendLocations();
-
     }
 
     public void getFriendLocations() {
 
         try {
             URL url = new URL(baseUrl + "/friends");
-            new RetrieveFriendsTask().execute(url);
+            new RetrieveFriendsTask(this).execute(url);
         }catch(MalformedURLException mue){
             Log.e("Longitude", "Malformed url", mue);
         }
@@ -81,5 +80,21 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
     public GoogleMap getGoogleMapObject(){
         return mMap;
+    }
+
+    public void MapAddGoogleMapMarker(MarkerOptions markerOptions){
+        mMapMarkers.add(markerOptions);
+        mMap.addMarker(markerOptions);
+    }
+
+    public void MapZoomToFit(){
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        for(MarkerOptions marker : mMapMarkers){
+            builder.include(marker.getPosition());
+        }
+        LatLngBounds bounds = builder.build();
+        int padding = 20; // offset from edges of the map in pixels
+        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+        mMap.animateCamera(cu);
     }
 }
