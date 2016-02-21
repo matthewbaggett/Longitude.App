@@ -42,7 +42,6 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
         long parsedUrlsCount = 0;
         for (int i = 0; i < count; i++) {
 
-            List<Friend> friends = connect(urls[i]);
             this.FoundFriends = connect(urls[i]);
 
             parsedUrlsCount++;
