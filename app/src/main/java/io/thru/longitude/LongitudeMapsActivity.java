@@ -1,8 +1,13 @@
 package io.thru.longitude;
 
+import android.content.Context;
+import android.location.*;
+import android.location.Location;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -30,15 +35,17 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.util.Log;
 
-public class LongitudeMapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class LongitudeMapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener {
 
     private GoogleMap mMap;
     private List<MarkerOptions> mMapMarkers = new ArrayList<MarkerOptions>();
+    protected LocationManager locationManager;
+    protected LocationListener locationListener;
+    protected Context context;
 
-    String text;
+    public static String baseUrl = "http://api.longitude.thru.io";
 
-    private String baseUrl = "http://api.longitude.thru.io";
-
+    private GoogleApiClient mGoogleApiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,9 +55,7 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
     }
-
 
     /**
      * Manipulates the map once available.
@@ -65,21 +70,92 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         getFriendLocations();
+        getOwnLocation();
+        try{
+            mMap.setMyLocationEnabled(true);
+        }catch(SecurityException se){
+            Log.d("LongitudeGPS", "Not allowed GPS :c");
+        }
     }
 
     public void getFriendLocations() {
-
         try {
             URL url = new URL(baseUrl + "/friends");
             new RetrieveFriendsTask(this).execute(url);
         }catch(MalformedURLException mue){
             Log.e("Longitude", "Malformed url", mue);
         }
-
     }
 
-    public GoogleMap getGoogleMapObject(){
-        return mMap;
+    public void getOwnLocation() {
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        long t = 3;
+        float d = 10;
+        try {
+            Log.i("LongitudeGPS", "Requesting Location Update");
+            locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    t,
+                    d,
+                    this
+            );
+            Log.i("LongitudeGPS", "Requesting Location Update Requested");
+
+        }catch(SecurityException se){
+            Log.d("LongitudeGPS", "Not allowed GPS :c");
+        }
+
+        Location lastLocation = getLastLocationWrapper();
+        Log.i("LongitudeGPS", "Last Location: " + lastLocation.getLatitude() + ", " + lastLocation.getLongitude());
+        updateOwnLocation(lastLocation);
+    }
+
+    public void updateOwnLocation(Location location){
+        new UpdateLocationTask(this).execute(location);
+    }
+
+    private Location getLastLocationWrapper(){
+        try {
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            if (locationManager != null) {
+                Location lastKnownLocationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (lastKnownLocationGPS != null) {
+                    Log.i("LongitudeGPS", "LastLocationWrapper source is GPS_PROVIDER");
+                    return lastKnownLocationGPS;
+                } else {
+                    Location loc = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+                    Log.i("LongitudeGPS", "LastLocationWrapper source is PASSIVE_PROVIDER");
+                    return loc;
+                }
+            } else {
+                return null;
+            }
+        }catch(SecurityException se){
+            Log.d("LongitudeGPS", "Not allowed GPS :c");
+        }
+        return null;
+    }
+
+    @Override
+    public void onLocationChanged(android.location.Location location) {
+        Log.d("LongitudeGPS", "Location Changed: (" + location.getLatitude() + ", " + location.getLongitude() + ")");
+        LatLng friendLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+        this.MapAddGoogleMapMarker(new MarkerOptions().position(friendLatLng).title("Your Location"));
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        Log.d("LongitudeGPS", "GPS Provider disabled: " + provider.toString());
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        Log.d("LongitudeGPS", "GPS Provider enabled: " + provider.toString());
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        Log.d("LongitudeGPS", "onStatusChanged! " + provider.toString());
     }
 
     public void MapAddGoogleMapMarker(MarkerOptions markerOptions){
