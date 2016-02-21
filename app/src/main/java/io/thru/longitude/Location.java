@@ -1,6 +1,5 @@
 package io.thru.longitude;
 
-
 public class Location {
     private double x;
     private double y;
