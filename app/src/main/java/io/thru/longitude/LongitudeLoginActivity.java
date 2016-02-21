@@ -342,7 +342,6 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
 
             Log.i("UserLogin", "Email    : " + email);
             Log.i("UserLogin", "Phone    : " + phonenumber);
-            Log.i("UserLogin", "Password : " + password);
         }
 
         @Override
