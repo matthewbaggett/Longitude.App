@@ -1,6 +1,7 @@
 package io.thru.longitude;
 
 import android.content.Context;
+import android.content.Intent;
 import android.location.*;
 import android.location.Location;
 import android.support.v4.app.FragmentActivity;
@@ -34,6 +35,12 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
     private GoogleApiClient mGoogleApiClient;
 
+    private String mAuthKey = "";
+
+    public void setAuthKey(String authKey){
+        mAuthKey = authKey;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,6 +49,11 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        if(this.mAuthKey == ""){
+            Intent LoginIntent = new Intent(this, LongitudeLoginActivity.class);
+            startActivity(LoginIntent);
+        }
     }
 
     /**
