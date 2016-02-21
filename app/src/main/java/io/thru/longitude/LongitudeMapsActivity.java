@@ -1,5 +1,7 @@
 package io.thru.longitude;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
 import android.location.*;
@@ -19,8 +21,10 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 public class LongitudeMapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener {
@@ -50,7 +54,7 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        if(this.mAuthKey == ""){
+        if(this.mAuthKey.equals("")){
             Intent LoginIntent = new Intent(this, LongitudeLoginActivity.class);
             startActivity(LoginIntent);
         }
@@ -75,6 +79,42 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
         }catch(SecurityException se){
             Log.d("LongitudeGPS", "Not allowed GPS :c");
         }
+        updateProfile();
+    }
+
+    public void updateProfile(){
+        String mPhoneNumber = updateProfileGetPhoneNumber();
+        Log.i("UpdateProfile", "PhoneNumber: " + mPhoneNumber);
+        String mUsername = updateProfileGetUsername();
+        Log.i("UpdateProfile", "Username: " + mUsername);
+
+        // TODO: Push this data back into API to fill in the blanks
+    }
+
+    private String updateProfileGetPhoneNumber(){
+        TelephonyManager tMgr = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+        return tMgr.getLine1Number();
+    }
+
+    private String updateProfileGetUsername(){
+        AccountManager manager = AccountManager.get(this);
+        Account[] accounts = manager.getAccountsByType("com.google");
+        List<String> possibleEmails = new LinkedList<String>();
+
+        for (Account account : accounts) {
+            // TODO: Check possibleEmail against an email regex or treat
+            // account.name as an email address only for certain account.type values.
+            possibleEmails.add(account.name);
+        }
+
+        if (!possibleEmails.isEmpty() && possibleEmails.get(0) != null) {
+            String email = possibleEmails.get(0);
+            String[] parts = email.split("@");
+
+            if (parts.length > 1)
+                return parts[0];
+        }
+        return null;
     }
 
     public void getFriendLocations() {
