@@ -230,7 +230,7 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
 
     private boolean isPasswordValid(String password) {
         //TODO: Replace this with your own logic
-        return password.length() > 4;
+        return password.length() > 6;
     }
 
     /**
@@ -347,19 +347,8 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
-
+            // Attempt authentication against the network service.
             checkRemoteApiLogin(mEmail, mPhonenumber, mPassword);
-
-            for (String credential : DUMMY_CREDENTIALS) {
-                String[] pieces = credential.split(":");
-                if (pieces[0].equals(mEmail)) {
-                    // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
-                }
-            }
-
-            // TODO: register the new account here.
             return true;
         }
 
@@ -438,6 +427,8 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
                             mAuthCode = loginAuthCode.getString("auth_code");
                             Log.d("LongitudeLogin", "hooray, login response is good! Authcode: " + mAuthCode);
                             return true;
+                        }else{
+                            return false;
                         }
                     }
 
