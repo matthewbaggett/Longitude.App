@@ -348,8 +348,7 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
         @Override
         protected Boolean doInBackground(Void... params) {
             // Attempt authentication against the network service.
-            checkRemoteApiLogin(mEmail, mPhonenumber, mPassword);
-            return true;
+            return checkRemoteApiLogin(mEmail, mPhonenumber, mPassword);
         }
 
         @Override
@@ -358,7 +357,6 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
             showProgress(false);
 
             if (success) {
-
                 finish();
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));
@@ -423,7 +421,7 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
                         Log.d("LongitudeLogin", "Response JSON Status: " + loginResponseStatus);
                         JSONObject loginAuthCode = locationUpdateResponse.getJSONObject("AuthCode");
                         Log.d("LongitudeLogin", "Response JSON Auth Code: " + loginAuthCode.getString("auth_code"));
-                        if(loginResponseStatus.toLowerCase() == "okay"){
+                        if(loginResponseStatus.toLowerCase().equals("okay")){
                             mAuthCode = loginAuthCode.getString("auth_code");
                             Log.d("LongitudeLogin", "hooray, login response is good! Authcode: " + mAuthCode);
                             return true;
