@@ -1,11 +1,16 @@
 package io.thru.longitude;
 
+import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.*;
 import android.location.Location;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
@@ -20,11 +25,13 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
+import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -36,6 +43,8 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
     protected LocationListener locationListener;
     protected Context context;
 
+    static private final int LONGITUDE_PERMISSIONS_REQUEST_READ_PHONE_STATE = 5;
+
     public static String baseUrl = "http://api.longitude.thru.io";
 
     private GoogleApiClient mGoogleApiClient;
@@ -45,6 +54,7 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_longitude_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -66,8 +76,14 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
                 Log.i("onActivityResult", "whoop whoop");
                 getOwnLocation();
                 getFriendLocations();
+                storeAuthKey();
                 break;
         }
+    }
+
+    protected void storeAuthKey(){
+        //KeyStore ks = KeyStore.getInstance();
+
     }
 
     /**
