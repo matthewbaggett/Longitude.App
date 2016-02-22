@@ -275,7 +275,9 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
                 @Override public void onStart()
                 {
                     super.onStart();
-                    requestPermissions(neededPermissions.toArray(new String[0]), PERMISSIONS_REQUEST_CODE);
+                    if (Build.VERSION.SDK_INT >= 23) {
+                        requestPermissions(neededPermissions.toArray(new String[0]), PERMISSIONS_REQUEST_CODE);
+                    }
                 }
 
                 @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
