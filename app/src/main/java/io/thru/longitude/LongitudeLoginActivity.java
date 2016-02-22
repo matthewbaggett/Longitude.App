@@ -5,6 +5,7 @@ import android.accounts.AccountManager;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
@@ -475,18 +476,38 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
         public void updateProfile(){
             String email = "";
             String phoneNumber = updateProfileGetPhoneNumber();
-            Log.i("UpdateProfile", "PhoneNumber: " + phoneNumber);
+            Log.i("UserProfileUpdate", "PhoneNumber: " + phoneNumber);
             String userName = updateProfileGetUsername();
-            Log.i("UpdateProfile", "Username: " + userName);
+            Log.i("UserProfileUpdate", "Username: " + userName);
 
-            String firstName = "";
-            String lastName = "";
+            String fullName = updateProfileGetOwnerName();
+            Log.i("UserProfileUpdate", "Fullname: " + fullName);
 
-
-            UserProfileUpdate updateProfile = new UserProfileUpdate(email, phoneNumber, userName, firstName, lastName);
+            UserProfileUpdate updateProfile = new UserProfileUpdate(email, phoneNumber, userName);
             updateProfile.execute((Void) null);
         }
 
+        private String updateProfileGetOwnerName(){
+            final String[] projection = new String[]
+                    { ContactsContract.Profile.DISPLAY_NAME };
+            String name = null;
+            final Uri dataUri = Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI, ContactsContract.Contacts.Data.CONTENT_DIRECTORY);
+            final ContentResolver contentResolver = getContentResolver();
+            final Cursor c = contentResolver.query(dataUri, projection, null, null, null);
+
+            try
+            {
+                if (c.moveToFirst())
+                {
+                    name = c.getString(c.getColumnIndex(ContactsContract.Profile.DISPLAY_NAME));
+                }
+            }
+            finally
+            {
+                c.close();
+            }
+            return name;
+        }
         private String updateProfileGetPhoneNumber(){
             TelephonyManager tMgr = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
             return tMgr.getLine1Number();
@@ -519,28 +540,25 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
         private final String mEmail;
         private final String mPhonenumber;
         private final String mUserName;
-        private final String mFirstName;
-        private final String mLastName;
+
 
         private String mAuthCode;
 
-        UserProfileUpdate(String email, String phoneNumber, String userName, String firstName, String lastName) {
+        UserProfileUpdate(String email, String phoneNumber, String userName) {
             mEmail = email;
             mPhonenumber = phoneNumber;
             mUserName = userName;
-            mFirstName = firstName;
-            mLastName = lastName;
+
 
             Log.i("UserProfileUpdate", "Email    : " + mEmail);
             Log.i("UserProfileUpdate", "Phone    : " + mPhonenumber);
             Log.i("UserProfileUpdate", "Username : " + mUserName);
-            Log.i("UserProfileUpdate", "Name     : " + mFirstName + " " + mLastName);
         }
 
         @Override
         protected Boolean doInBackground(Void... params) {
             // Attempt authentication against the network service.
-            return checkRemoteApiLogin(mEmail, mPhonenumber, mUserName, mFirstName, mLastName);
+            return checkRemoteApiLogin(mEmail, mPhonenumber, mUserName);
         }
 
         @Override
@@ -562,7 +580,7 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
             showProgress(false);
         }
 
-        protected Boolean checkRemoteApiLogin(String email, String phoneNumber, String userName, String firstName, String lastName){
+        protected Boolean checkRemoteApiLogin(String email, String phoneNumber, String userName){
             URL url;
             try {
                 url = new URL(LongitudeMapsActivity.baseUrl + "/profile");
@@ -578,8 +596,6 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
                     loginRequest.put("authKey", LongitudeMapsActivity.mAuthKey);
                     loginRequest.put("email", email);
                     loginRequest.put("phoneNumber", phoneNumber);
-                    loginRequest.put("userName", userName);
-                    loginRequest.put("displayName", firstName + " " + lastName) ;
                 } catch (Exception ex) {
 
                 }
@@ -588,12 +604,12 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
                 HttpResponse response;
                 try {
                     String message = loginRequest.toString();
-                    Log.i("UpdateProfile", "Request JSON: " + message);
+                    Log.i("UserProfileUpdate", "Request JSON: " + message);
                     httpPut.setEntity(new StringEntity(message, "UTF8"));
                     httpPut.setHeader("Content-type", "application/json");
                     response = httpclient.execute(httpPut);
                     // Examine the response status
-                    Log.i("UpdateProfile","Response Code: " + response.getStatusLine().toString());
+                    Log.i("UserProfileUpdate","Response Code: " + response.getStatusLine().toString());
 
                     // Get hold of the response entity
                     HttpEntity entity = response.getEntity();
@@ -605,16 +621,16 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
                         // A Simple JSON Response Read
                         InputStream instream = entity.getContent();
                         String result = convertStreamToString(instream);
-                        Log.d("LongitudeLogin", "Response JSON: " + result);
+                        Log.d("UserProfileUpdate", "Response JSON: " + result);
                         // now you have the string representation of the JSON request
                         instream.close();
 
                         // Parse JSON
                         JSONObject locationUpdateResponse = new JSONObject(result);
                         String loginResponseStatus = locationUpdateResponse.getString("Status");
-                        Log.d("UpdateProfile", "Response JSON Status: " + loginResponseStatus);
+                        Log.d("UserProfileUpdate", "Response JSON Status: " + loginResponseStatus);
                         if(loginResponseStatus.toLowerCase().equals("okay")){
-                            Log.d("UpdateProfile", "hooray, profile update says okay!");
+                            Log.d("UserProfileUpdate", "hooray, profile update says okay!");
                             return true;
                         }else{
                             return false;
@@ -622,7 +638,7 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
                     }
 
                 } catch (Exception e) {
-                    Log.d("UpdateProfile", "Exception: " + e.toString());
+                    Log.d("UserProfileUpdate", "Exception: " + e.toString());
                 }
             }catch(MalformedURLException mue){
 

@@ -37,7 +37,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
-import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -46,14 +45,9 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
     private GoogleMap mMap;
     private List<MarkerOptions> mMapMarkers = new ArrayList<MarkerOptions>();
     protected LocationManager locationManager;
-    protected LocationListener locationListener;
-    protected Context context;
-
-    static private final int LONGITUDE_PERMISSIONS_REQUEST_READ_PHONE_STATE = 5;
 
     public static String baseUrl = "http://api.longitude.thru.io";
 
-    private GoogleApiClient mGoogleApiClient;
 
     public static String mAuthKey = "";
     public static String mDeviceID = "";
