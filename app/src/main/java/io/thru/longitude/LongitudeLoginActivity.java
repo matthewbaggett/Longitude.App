@@ -1,8 +1,11 @@
 package io.thru.longitude;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -18,6 +21,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -46,6 +50,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import static android.Manifest.permission.READ_CONTACTS;
@@ -356,6 +361,7 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
             showProgress(false);
 
             if (success) {
+                updateProfile();
                 finish();
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));
@@ -422,6 +428,7 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
                         Log.d("LongitudeLogin", "Response JSON Auth Code: " + loginAuthCode.getString("auth_code"));
                         if(loginResponseStatus.toLowerCase().equals("okay")){
                             mAuthCode = loginAuthCode.getString("auth_code");
+                            LongitudeMapsActivity.mAuthKey = mAuthCode;
                             Log.d("LongitudeLogin", "hooray, login response is good! Authcode: " + mAuthCode);
                             return true;
                         }else{
@@ -431,6 +438,191 @@ public class LongitudeLoginActivity extends AppCompatActivity implements LoaderC
 
                 } catch (Exception e) {
                     Log.d("LongitudeLogin", "Exception: " + e.toString());
+                }
+            }catch(MalformedURLException mue){
+
+            }
+            return false;
+        }
+
+        private String convertStreamToString(InputStream is) {
+        /*
+         * To convert the InputStream to String we use the BufferedReader.readLine()
+         * method. We iterate until the BufferedReader return null which means
+         * there's no more data to read. Each line will appended to a StringBuilder
+         * and returned as String.
+         */
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            StringBuilder sb = new StringBuilder();
+
+            String line = null;
+            try {
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line + "\n");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return sb.toString();
+        }
+
+        public void updateProfile(){
+            String email = "";
+            String phoneNumber = updateProfileGetPhoneNumber();
+            Log.i("UpdateProfile", "PhoneNumber: " + phoneNumber);
+            String userName = updateProfileGetUsername();
+            Log.i("UpdateProfile", "Username: " + userName);
+
+            String firstName = "";
+            String lastName = "";
+
+
+            UserProfileUpdate updateProfile = new UserProfileUpdate(email, phoneNumber, userName, firstName, lastName);
+            updateProfile.execute((Void) null);
+        }
+
+        private String updateProfileGetPhoneNumber(){
+            TelephonyManager tMgr = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+            return tMgr.getLine1Number();
+        }
+
+        private String updateProfileGetUsername(){
+            AccountManager manager = (AccountManager)getSystemService(Context.ACCOUNT_SERVICE);
+            Account[] accounts = manager.getAccountsByType("com.google");
+            List<String> possibleEmails = new LinkedList<String>();
+
+            for (Account account : accounts) {
+                // TODO: Check possibleEmail against an email regex or treat
+                // account.name as an email address only for certain account.type values.
+                possibleEmails.add(account.name);
+            }
+
+            if (!possibleEmails.isEmpty() && possibleEmails.get(0) != null) {
+                String email = possibleEmails.get(0);
+                String[] parts = email.split("@");
+
+                if (parts.length > 1)
+                    return parts[0];
+            }
+            return null;
+        }
+    }
+
+    public class UserProfileUpdate extends AsyncTask<Void, Void, Boolean> {
+
+        private final String mEmail;
+        private final String mPhonenumber;
+        private final String mUserName;
+        private final String mFirstName;
+        private final String mLastName;
+
+        private String mAuthCode;
+
+        UserProfileUpdate(String email, String phoneNumber, String userName, String firstName, String lastName) {
+            mEmail = email;
+            mPhonenumber = phoneNumber;
+            mUserName = userName;
+            mFirstName = firstName;
+            mLastName = lastName;
+
+            Log.i("UserProfileUpdate", "Email    : " + mEmail);
+            Log.i("UserProfileUpdate", "Phone    : " + mPhonenumber);
+            Log.i("UserProfileUpdate", "Username : " + mUserName);
+            Log.i("UserProfileUpdate", "Name     : " + mFirstName + " " + mLastName);
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            // Attempt authentication against the network service.
+            return checkRemoteApiLogin(mEmail, mPhonenumber, mUserName, mFirstName, mLastName);
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            mAuthTask = null;
+            showProgress(false);
+
+            if (success) {
+                finish();
+            } else {
+                mPasswordView.setError(getString(R.string.error_incorrect_password));
+                mPasswordView.requestFocus();
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            mAuthTask = null;
+            showProgress(false);
+        }
+
+        protected Boolean checkRemoteApiLogin(String email, String phoneNumber, String userName, String firstName, String lastName){
+            URL url;
+            try {
+                url = new URL(LongitudeMapsActivity.baseUrl + "/profile");
+
+                HttpClient httpclient = new DefaultHttpClient();
+
+                // Prepare a request object
+                HttpPut httpPut = new HttpPut(url.toString());
+
+                // Build the request object
+                JSONObject loginRequest = new JSONObject();
+                try{
+                    loginRequest.put("authKey", LongitudeMapsActivity.mAuthKey);
+                    loginRequest.put("email", email);
+                    loginRequest.put("phoneNumber", phoneNumber);
+                    loginRequest.put("userName", userName);
+                    loginRequest.put("displayName", firstName + " " + lastName) ;
+                } catch (Exception ex) {
+
+                }
+
+                // Execute the request
+                HttpResponse response;
+                try {
+                    String message = loginRequest.toString();
+                    Log.i("UpdateProfile", "Request JSON: " + message);
+                    httpPut.setEntity(new StringEntity(message, "UTF8"));
+                    httpPut.setHeader("Content-type", "application/json");
+                    response = httpclient.execute(httpPut);
+                    // Examine the response status
+                    Log.i("UpdateProfile","Response Code: " + response.getStatusLine().toString());
+
+                    // Get hold of the response entity
+                    HttpEntity entity = response.getEntity();
+                    // If the response does not enclose an entity, there is no need
+                    // to worry about connection release
+
+                    if (entity != null) {
+
+                        // A Simple JSON Response Read
+                        InputStream instream = entity.getContent();
+                        String result = convertStreamToString(instream);
+                        Log.d("LongitudeLogin", "Response JSON: " + result);
+                        // now you have the string representation of the JSON request
+                        instream.close();
+
+                        // Parse JSON
+                        JSONObject locationUpdateResponse = new JSONObject(result);
+                        String loginResponseStatus = locationUpdateResponse.getString("Status");
+                        Log.d("UpdateProfile", "Response JSON Status: " + loginResponseStatus);
+                        if(loginResponseStatus.toLowerCase().equals("okay")){
+                            Log.d("UpdateProfile", "hooray, profile update says okay!");
+                            return true;
+                        }else{
+                            return false;
+                        }
+                    }
+
+                } catch (Exception e) {
+                    Log.d("UpdateProfile", "Exception: " + e.toString());
                 }
             }catch(MalformedURLException mue){
 

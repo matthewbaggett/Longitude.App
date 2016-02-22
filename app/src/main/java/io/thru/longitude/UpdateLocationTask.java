@@ -59,7 +59,8 @@ public class UpdateLocationTask extends AsyncTask<android.location.Location, Int
             // Build the request object
             JSONObject locationUpdateRequest = new JSONObject();
             try{
-                locationUpdateRequest.put("sessionKey", "sHXpjQOGzLbL71m");
+                locationUpdateRequest.put("authKey", LongitudeMapsActivity.mAuthKey);
+                locationUpdateRequest.put("deviceId", LongitudeMapsActivity.mDeviceID);
                 locationUpdateRequest.put("location", location.getLatitude() + "," + location.getLongitude());
             } catch (Exception ex) {
 
@@ -73,7 +74,7 @@ public class UpdateLocationTask extends AsyncTask<android.location.Location, Int
                 httpPut.setHeader("Content-type", "application/json");
                 response = httpclient.execute(httpPut);
                 // Examine the response status
-                Log.i("LongitudeApiLocation",response.getStatusLine().toString());
+                Log.i("LongitudeApiLocation", response.getStatusLine().toString());
 
                 // Get hold of the response entity
                 HttpEntity entity = response.getEntity();
@@ -92,7 +93,7 @@ public class UpdateLocationTask extends AsyncTask<android.location.Location, Int
                     // Parse JSON
                     JSONObject locationUpdateResponse = new JSONObject(result);
                     String locationUpdateResponseStatus = locationUpdateResponse.getString("Status");
-                    if(locationUpdateResponseStatus.toLowerCase() == "okay"){
+                    if(locationUpdateResponseStatus.toLowerCase().equals("okay")){
                         Log.d("LongitudeApiLocation", "hooray, location update response is good!");
                     }
                 }

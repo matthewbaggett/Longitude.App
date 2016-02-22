@@ -71,7 +71,7 @@ public class RetrieveFriendsTask extends AsyncTask<URL, Integer, Long> {
         // Build the request object
         JSONObject friendsRequest = new JSONObject();
         try{
-            friendsRequest.put("sessionKey", "sHXpjQOGzLbL71m");
+            friendsRequest.put("authKey", LongitudeMapsActivity.mAuthKey);
         } catch (Exception ex) {
 
         }

@@ -23,6 +23,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -39,11 +40,8 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
     private GoogleApiClient mGoogleApiClient;
 
-    private String mAuthKey = "";
-
-    public void setAuthKey(String authKey){
-        mAuthKey = authKey;
-    }
+    public static String mAuthKey = "";
+    public static String mDeviceID = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,9 +52,21 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        mDeviceID = getDeviceID();
+
         if(this.mAuthKey.equals("")){
             Intent LoginIntent = new Intent(this, LongitudeLoginActivity.class);
-            startActivity(LoginIntent);
+            startActivityForResult(LoginIntent, 90);
+        }
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch(requestCode) {
+            case 90:
+                Log.i("onActivityResult", "whoop whoop");
+                getOwnLocation();
+                getFriendLocations();
+                break;
         }
     }
 
@@ -79,42 +89,19 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
         }catch(SecurityException se){
             Log.d("LongitudeGPS", "Not allowed GPS :c");
         }
-        updateProfile();
     }
 
-    public void updateProfile(){
-        String mPhoneNumber = updateProfileGetPhoneNumber();
-        Log.i("UpdateProfile", "PhoneNumber: " + mPhoneNumber);
-        String mUsername = updateProfileGetUsername();
-        Log.i("UpdateProfile", "Username: " + mUsername);
+    public String getDeviceID(){
+        final TelephonyManager tm = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
 
-        // TODO: Push this data back into API to fill in the blanks
-    }
+        final String tmDevice, tmSerial, androidId;
+        tmDevice = "" + tm.getDeviceId();
+        tmSerial = "" + tm.getSimSerialNumber();
+        androidId = "" + android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
 
-    private String updateProfileGetPhoneNumber(){
-        TelephonyManager tMgr = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
-        return tMgr.getLine1Number();
-    }
-
-    private String updateProfileGetUsername(){
-        AccountManager manager = AccountManager.get(this);
-        Account[] accounts = manager.getAccountsByType("com.google");
-        List<String> possibleEmails = new LinkedList<String>();
-
-        for (Account account : accounts) {
-            // TODO: Check possibleEmail against an email regex or treat
-            // account.name as an email address only for certain account.type values.
-            possibleEmails.add(account.name);
-        }
-
-        if (!possibleEmails.isEmpty() && possibleEmails.get(0) != null) {
-            String email = possibleEmails.get(0);
-            String[] parts = email.split("@");
-
-            if (parts.length > 1)
-                return parts[0];
-        }
-        return null;
+        UUID deviceUuid = new UUID(androidId.hashCode(), ((long)tmDevice.hashCode() << 32) | tmSerial.hashCode());
+        String deviceId = deviceUuid.toString();
+        return deviceId;
     }
 
     public void getFriendLocations() {
@@ -145,12 +132,20 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
         }
 
         Location lastLocation = getLastLocationWrapper();
-        Log.i("LongitudeGPS", "Last Location: " + lastLocation.getLatitude() + ", " + lastLocation.getLongitude());
-        updateOwnLocation(lastLocation);
+        if(lastLocation != null) {
+            Log.i("LongitudeGPS", "Last Location: " + lastLocation.getLatitude() + ", " + lastLocation.getLongitude());
+            updateOwnLocation(lastLocation);
+        }else{
+            Log.i("LongitudeGPS", "Last Location: UNAVAILABLE! :c");
+        }
     }
 
     public void updateOwnLocation(Location location){
-        new UpdateLocationTask(this).execute(location);
+        if(! LongitudeMapsActivity.mAuthKey.isEmpty()){
+            new UpdateLocationTask(this).execute(location);
+        }else{
+            Log.i("LongitudeGPS", "Not running UpdateLocationTask, there is no mAuthKey yet.");
+        }
     }
 
     private Location getLastLocationWrapper(){
@@ -204,12 +199,15 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
     public void MapZoomToFit(){
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        for(MarkerOptions marker : mMapMarkers){
-            builder.include(marker.getPosition());
+        if(mMapMarkers.size() > 0){
+            for(MarkerOptions marker : mMapMarkers){
+                builder.include(marker.getPosition());
+            }
+
+            LatLngBounds bounds = builder.build();
+            int padding = 20; // offset from edges of the map in pixels
+            CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+            mMap.animateCamera(cu);
         }
-        LatLngBounds bounds = builder.build();
-        int padding = 20; // offset from edges of the map in pixels
-        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
-        mMap.animateCamera(cu);
     }
 }
