@@ -4,12 +4,18 @@ import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.AlertDialog;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PermissionInfo;
 import android.location.*;
 import android.location.Location;
+import android.os.Build;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -54,8 +60,11 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
+
+        grantMeAllDangerousPermissions();
+    }
+    protected void shouldBeOkayToStartTheApplicationNow(){
         setContentView(R.layout.activity_longitude_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -224,6 +233,71 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
             int padding = 20; // offset from edges of the map in pixels
             CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
             mMap.animateCamera(cu);
+        }
+    }
+
+    private void grantMeAllDangerousPermissions()
+    {
+        if (Build.VERSION.SDK_INT < 23) {
+            shouldBeOkayToStartTheApplicationNow();
+            return;
+        }
+
+        try
+        {
+            final int PERMISSIONS_REQUEST_CODE = 9613;
+
+            // Scan manifest for dangerous permissions not already granted
+            PackageManager packageManager = getPackageManager();
+            PackageInfo packageInfo = packageManager.getPackageInfo(getPackageName(), PackageManager.GET_PERMISSIONS);
+            if (packageInfo.requestedPermissions == null)
+                packageInfo.requestedPermissions = new String[0];
+
+            final List<String> neededPermissions = new LinkedList<String>();
+            for (String permission : packageInfo.requestedPermissions) {
+                PermissionInfo permissionInfo = packageManager.getPermissionInfo(permission, PackageManager.GET_META_DATA);
+                if (permissionInfo.protectionLevel != PermissionInfo.PROTECTION_DANGEROUS)
+                    continue;
+                if (checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED)
+                    continue;
+                neededPermissions.add(permission);
+            }
+
+            // No need to ask for any dangerous permissions
+            if (neededPermissions.isEmpty()) {
+                shouldBeOkayToStartTheApplicationNow();
+                return;
+            }
+
+            final FragmentManager fragmentManager = getFragmentManager();
+            final Fragment request = new Fragment() {
+
+                @Override public void onStart()
+                {
+                    super.onStart();
+                    requestPermissions(neededPermissions.toArray(new String[0]), PERMISSIONS_REQUEST_CODE);
+                }
+
+                @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+                {
+                    if (requestCode != PERMISSIONS_REQUEST_CODE)
+                        return;
+
+                    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                    fragmentTransaction.remove(this);
+                    fragmentTransaction.commit();
+
+                    shouldBeOkayToStartTheApplicationNow();
+                }
+            };
+
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.add(0, request);
+            fragmentTransaction.commit();
+        }
+        catch(Exception error)
+        {
+            Log.w("MyApplicationTag", String.format("Unable to query for permission: %s", error.getMessage()));
         }
     }
 }
