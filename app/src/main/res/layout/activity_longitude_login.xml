@@ -12,12 +12,46 @@
 
     <!-- Login progress -->
 
-    <ImageView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/imageView"
-        android:src="@drawable/logo_256"
-        android:layout_gravity="center_horizontal" />
+        android:layout_gravity="center_horizontal">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView"
+            android:src="@drawable/logo_128" />
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="Longitude"
+                android:id="@+id/textView2"
+                android:textColor="#8ebc69"
+                android:textSize="50dp"
+                android:paddingLeft="17dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:text="Please don&apos;t complain."
+                android:id="@+id/textView"
+                android:layout_gravity="bottom"
+                android:paddingLeft="20dp" />
+        </LinearLayout>
+
+
+
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/login_progress"
