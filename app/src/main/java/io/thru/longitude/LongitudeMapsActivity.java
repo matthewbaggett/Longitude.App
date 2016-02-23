@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
+import android.graphics.Color;
 import android.location.*;
 import android.location.Location;
 import android.os.Build;
@@ -29,6 +30,9 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyStore;
@@ -43,6 +47,7 @@ import android.util.Log;
 public class LongitudeMapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener {
 
     private GoogleMap mMap;
+    private PolylineOptions myMovementLine;
     private List<MarkerOptions> mMapMarkers = new ArrayList<MarkerOptions>();
     protected LocationManager locationManager;
 
@@ -103,6 +108,11 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        myMovementLine = new PolylineOptions();
+        myMovementLine.width(5);
+        myMovementLine.color(Color.GREEN);
+        mMap.addPolyline(myMovementLine);
         getFriendLocations();
         getOwnLocation();
         try{
@@ -196,7 +206,8 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
         Log.d("LongitudeGPS", "Location Changed: (" + location.getLatitude() + ", " + location.getLongitude() + ")");
         LatLng myLatLng = new LatLng(location.getLatitude(), location.getLongitude());
         updateOwnLocation(location);
-        this.MapAddGoogleMapMarker(new MarkerOptions().position(myLatLng).title("Your Location"));
+        myMovementLine.add(myLatLng);
+        mMap.addPolyline(myMovementLine);
     }
 
     @Override
