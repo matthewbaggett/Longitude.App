@@ -46,6 +46,8 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
     private List<MarkerOptions> mMapMarkers = new ArrayList<MarkerOptions>();
     protected LocationManager locationManager;
 
+    private static final int LoginActivityComplete = 449;
+
     public static String baseUrl = "http://api.longitude.thru.io";
 
 
@@ -69,13 +71,13 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
 
         if(this.mAuthKey.equals("")){
             Intent LoginIntent = new Intent(this, LongitudeLoginActivity.class);
-            startActivityForResult(LoginIntent, 90);
+            startActivityForResult(LoginIntent, LoginActivityComplete);
         }
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch(requestCode) {
-            case 90:
+            case LoginActivityComplete:
                 Log.i("onActivityResult", "whoop whoop");
                 getOwnLocation();
                 getFriendLocations();
@@ -192,8 +194,9 @@ public class LongitudeMapsActivity extends FragmentActivity implements OnMapRead
     @Override
     public void onLocationChanged(android.location.Location location) {
         Log.d("LongitudeGPS", "Location Changed: (" + location.getLatitude() + ", " + location.getLongitude() + ")");
-        LatLng friendLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-        this.MapAddGoogleMapMarker(new MarkerOptions().position(friendLatLng).title("Your Location"));
+        LatLng myLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+        updateOwnLocation(location);
+        this.MapAddGoogleMapMarker(new MarkerOptions().position(myLatLng).title("Your Location"));
     }
 
     @Override
